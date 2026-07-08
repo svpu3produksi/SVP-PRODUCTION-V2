@@ -113,12 +113,12 @@ export default function SheetsSync({ onSyncAll, currentUser, onLogin, onLogout }
                     <path fill="#FBBC05" d="M2.01 11.6c-.36-1.08-.56-2.22-.56-3.4s.2-2.32.56-3.4V1.22H.94C.34 2.42 0 3.77 0 5.2c0 1.43.34 2.78.94 3.98l1.07 2.42z" />
                     <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.96 1.19 15.24 0 12 0 7.21 0 3.04 4.62.94 8.78l7.98 6.19c1.41-4.23 5.34-7.37 9.99-7.37z" />
                   </svg>
-                  Connect Google Account
+                  Login dengan Google
                 </button>
                 <div className="bg-blue-50/50 border border-blue-100 p-3 rounded-lg space-y-1 mt-2">
-                  <p className="text-[10px] font-extrabold text-blue-800 uppercase tracking-wide">💡 Tips Koneksi IFrame</p>
+                  <p className="text-[10px] font-extrabold text-blue-800 uppercase tracking-wide">💡 Google Identity Services (GSI) Aktif</p>
                   <p className="text-[10px] text-blue-700 leading-normal font-medium">
-                    Jika login gagal atau jendela pop-up tertutup otomatis karena kendala iFrame (Preview), silakan klik tombol <strong>"Open in a new tab"</strong> di pojok kanan atas layar Anda untuk membuka aplikasi secara penuh, lalu hubungkan kembali akun Google Anda di tab tersebut.
+                    Google Sign-In telah dioptimalkan khusus untuk lingkungan iFrame menggunakan GSI Token Client. Jendela pop-up persetujuan Google akan terbuka dan menyinkronkan data secara otomatis kembali ke pratinjau ini tanpa kendala cookie pihak ketiga.
                   </p>
                 </div>
               </div>
