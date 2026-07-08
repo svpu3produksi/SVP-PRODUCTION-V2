@@ -113,7 +113,7 @@ export default function SheetsSync({ onSyncAll, currentUser, onLogin, onLogout }
                     <path fill="#FBBC05" d="M2.01 11.6c-.36-1.08-.56-2.22-.56-3.4s.2-2.32.56-3.4V1.22H.94C.34 2.42 0 3.77 0 5.2c0 1.43.34 2.78.94 3.98l1.07 2.42z" />
                     <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.96 1.19 15.24 0 12 0 7.21 0 3.04 4.62.94 8.78l7.98 6.19c1.41-4.23 5.34-7.37 9.99-7.37z" />
                   </svg>
-                  Hubungkan dengan Google Account
+                  Connect Google Account
                 </button>
                 <div className="bg-blue-50/50 border border-blue-100 p-3 rounded-lg space-y-1 mt-2">
                   <p className="text-[10px] font-extrabold text-blue-800 uppercase tracking-wide">💡 Tips Koneksi IFrame</p>
