@@ -4,9 +4,9 @@ import { FileSpreadsheet, Copy, Check, ShieldCheck, HelpCircle, Link2, Wifi, Ref
 
 interface SheetsSyncProps {
   onSyncAll: () => Promise<{ success: boolean; message: string }>;
-  currentUser: any | null;
-  onLogin: () => Promise<void>;
-  onLogout: () => Promise<void>;
+  currentUser?: any | null;
+  onLogin?: () => Promise<void>;
+  onLogout?: () => Promise<void>;
 }
 
 export default function SheetsSync({ onSyncAll, currentUser, onLogin, onLogout }: SheetsSyncProps) {
@@ -72,59 +72,6 @@ export default function SheetsSync({ onSyncAll, currentUser, onLogin, onLogout }
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Setup Form & Manual trigger */}
         <div className="space-y-6">
-          {/* Google Sheets API Auth Card */}
-          <div className="bento-card p-6 space-y-4">
-            <h3 className="font-extrabold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              Otorisasi Google Sheets API (OAuth)
-            </h3>
-            {currentUser ? (
-              <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-xl flex items-start gap-3">
-                <div className="p-2 bg-emerald-500 rounded-lg text-white">
-                  <Check className="w-4 h-4" />
-                </div>
-                <div className="flex-grow space-y-1">
-                  <p className="text-xs font-bold text-emerald-800 uppercase tracking-wide">Telah Terkoneksi</p>
-                  <p className="text-[11px] text-emerald-700">
-                    Aplikasi terhubung langsung ke Google Sheets API sebagai <strong>{currentUser.email}</strong>.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={onLogout}
-                    className="mt-2 text-[10px] font-bold text-emerald-600 hover:text-emerald-800 border-b border-emerald-300 hover:border-emerald-600 uppercase tracking-wider cursor-pointer"
-                  >
-                    Putuskan Koneksi Google Account
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="bg-amber-50/50 border border-amber-100 p-4 rounded-xl space-y-3">
-                <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                  Masuk dengan Google untuk mengizinkan aplikasi menulis data secara real-time langsung ke file Google Spreadsheet Anda menggunakan Spreadsheet ID.
-                </p>
-                <button
-                  type="button"
-                  onClick={onLogin}
-                  className="w-full flex items-center justify-center gap-2.5 bg-white hover:bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm transition-all text-slate-700 hover:text-slate-900 cursor-pointer uppercase tracking-wider"
-                >
-                  <svg className="w-4 h-4" viewBox="0 0 24 24">
-                    <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v3.92h6.69c-.29 1.5-.14 3-.97 4.17v3.46h6.48c3.8-3.5 5.97-8.67 5.97-14.48z" />
-                    <path fill="#34A853" d="M12 24c3.24 0 5.97-1.08 7.96-2.91l-6.48-3.46c-1.8.84-3.87 1.34-6.04 1.34-4.65 0-8.58-3.14-9.99-7.37H.94v3.58C3.04 19.38 7.21 24 12 24z" />
-                    <path fill="#FBBC05" d="M2.01 11.6c-.36-1.08-.56-2.22-.56-3.4s.2-2.32.56-3.4V1.22H.94C.34 2.42 0 3.77 0 5.2c0 1.43.34 2.78.94 3.98l1.07 2.42z" />
-                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.96 1.19 15.24 0 12 0 7.21 0 3.04 4.62.94 8.78l7.98 6.19c1.41-4.23 5.34-7.37 9.99-7.37z" />
-                  </svg>
-                  Login dengan Google
-                </button>
-                <div className="bg-blue-50/50 border border-blue-100 p-3 rounded-lg space-y-1 mt-2">
-                  <p className="text-[10px] font-extrabold text-blue-800 uppercase tracking-wide">💡 Google Identity Services (GSI) Aktif</p>
-                  <p className="text-[10px] text-blue-700 leading-normal font-medium">
-                    Google Sign-In telah dioptimalkan khusus untuk lingkungan iFrame menggunakan GSI Token Client. Jendela pop-up persetujuan Google akan terbuka dan menyinkronkan data secara otomatis kembali ke pratinjau ini tanpa kendala cookie pihak ketiga.
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-
           <form onSubmit={handleSave} className="bento-card p-6 space-y-4">
             <h3 className="font-extrabold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-2">
               <Link2 className="w-4 h-4 text-blue-500" />
