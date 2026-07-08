@@ -69,15 +69,28 @@ export default function App() {
     };
   }, []);
 
+  const [showIframeLoginModal, setShowIframeLoginModal] = useState(false);
+
   const handleLogin = async () => {
+    const isInIframe = window.self !== window.top;
+    if (isInIframe) {
+      setShowIframeLoginModal(true);
+      return;
+    }
+    await executeGoogleSignIn();
+  };
+
+  const executeGoogleSignIn = async () => {
     try {
       const result = await googleSignIn();
       if (result) {
         setCurrentUser(result.user);
         setOauthToken(result.accessToken);
+        setShowIframeLoginModal(false);
       }
     } catch (err) {
       console.error('Failed to sign in with Google:', err);
+      alert('Gagal login Google Auth: ' + (err instanceof Error ? err.message : String(err)) + '\n\nTips: Jika Anda berada di dalam iFrame, silakan buka aplikasi di tab baru.');
     }
   };
 
@@ -620,6 +633,78 @@ export default function App() {
       <footer className="bg-white border-t border-slate-100 py-4 text-center text-xs text-slate-400 select-none print:hidden shrink-0">
         <p>&copy; 2026 Production Process Monitoring SVP Production. All Rights Reserved.</p>
       </footer>
+
+      {/* IFrame Login Interceptor Modal */}
+      {showIframeLoginModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full shadow-2xl overflow-hidden animate-scaleIn">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-4 flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-blue-300 animate-pulse" />
+                <h3 className="font-extrabold text-sm uppercase tracking-wider">
+                  Otorisasi Google Accounts (iFrame)
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowIframeLoginModal(false)}
+                className="text-white hover:text-slate-200 text-lg font-black bg-white/10 hover:bg-white/20 w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer"
+              >
+                &times;
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="space-y-2">
+                <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                  Browser mendeteksi bahwa aplikasi ini saat ini berjalan di dalam <strong className="text-blue-600">iFrame Pratinjau (Preview)</strong>.
+                </p>
+                <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                  Kebijakan keamanan browser modern memblokir cookies pihak ketiga (third-party cookies) di dalam frame cross-origin, yang menyebabkan jendela pop-up Google login otomatis tertutup atau gagal sinkronisasi kembali ke iFrame.
+                </p>
+                <div className="bg-blue-50 border border-blue-100 p-3 rounded-xl text-blue-800 text-[11px] leading-relaxed font-semibold">
+                  💡 <strong>Saran Terbaik:</strong> Membuka aplikasi langsung di tab browser baru akan memulihkan fungsi Google Sign-In secara penuh dan aman (100% Berhasil).
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    // Open current full URL in new tab
+                    window.open(window.location.href, '_blank');
+                    setShowIframeLoginModal(false);
+                  }}
+                  className="w-full px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-md hover:shadow-lg transition-all cursor-pointer text-center uppercase tracking-wider flex items-center justify-center gap-2 font-mono"
+                >
+                  <RefreshCw className="w-4 h-4 animate-spin-slow text-blue-200" />
+                  Buka di Tab Baru & Login
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setShowIframeLoginModal(false);
+                    // Add a tiny delay so the modal closing doesn't conflict with popup focus
+                    setTimeout(() => {
+                      executeGoogleSignIn();
+                    }, 200);
+                  }}
+                  className="w-full px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-colors border border-slate-200 cursor-pointer uppercase tracking-wider"
+                >
+                  Tetap Coba di Tab Ini
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowIframeLoginModal(false)}
+                  className="w-full px-4 py-2 bg-white hover:bg-slate-50 text-slate-400 font-bold text-xs rounded-xl transition-colors cursor-pointer uppercase tracking-wider"
+                >
+                  Batal
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
