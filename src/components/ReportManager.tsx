@@ -14,6 +14,7 @@ interface ReportManagerProps {
   setBatches: React.Dispatch<React.SetStateAction<Batch[]>>;
   setMachines: React.Dispatch<React.SetStateAction<Machine[]>>;
   setTankUsageHistory: React.Dispatch<React.SetStateAction<TankHistory[]>>;
+  setDowntimes?: React.Dispatch<React.SetStateAction<DowntimeLog[]>>;
 }
 
 interface TankStatus {
@@ -207,7 +208,8 @@ export default function ReportManager({
   tankUsageHistory,
   setBatches,
   setMachines,
-  setTankUsageHistory
+  setTankUsageHistory,
+  setDowntimes
 }: ReportManagerProps) {
   // --- LIVE KANBAN & MACHINE INTEGRATION HELPERS ---
   const handleUpdateBatchPhase = (batchId: string, phase: Batch['phase']) => {
@@ -299,8 +301,32 @@ export default function ReportManager({
       return m;
     }));
   };
-  // Navigation inside Report Tab: "aseptic" or "vision"
-  const [activeDivision, setActiveDivision] = useState<'aseptic' | 'vision'>('aseptic');
+
+  const handleQuickAddDowntimeSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickDowntimeMachine) {
+      alert('Silakan pilih mesin.');
+      return;
+    }
+    const newId = `dt_${Date.now()}`;
+    const newLog: DowntimeLog = {
+      id: newId,
+      machineName: quickDowntimeMachine,
+      category: maintenanceCategory,
+      durationMinutes: Number(quickDowntimeDuration) || 15,
+      timestamp: new Date().toISOString(),
+      notes: maintenanceIssue
+    };
+
+    if (setDowntimes) {
+      setDowntimes(prev => [newLog, ...prev]);
+      setConnectedDowntimeId(newId);
+      setShowQuickAddDowntime(false);
+      alert('Berhasil membuat dan menghubungkan Catatan Kejadian Downtime baru!');
+    }
+  };
+  // Navigation inside Report Tab: "aseptic", "vision", or "maintenance"
+  const [activeDivision, setActiveDivision] = useState<'aseptic' | 'vision' | 'maintenance'>('aseptic');
   
   // Editor Mode: "form" or "direct"
   const [editorMode, setEditorMode] = useState<'form' | 'direct'>('form');
@@ -555,9 +581,73 @@ export default function ReportManager({
   const [newTankName, setNewTankName] = useState('');
   const [newTankStatusText, setNewTankStatusText] = useState('');
 
+  // Maintenance Form states
+  const [maintenanceDate, setMaintenanceDate] = useState(() => {
+    const saved = localStorage.getItem('svp_report_maint_date');
+    if (saved) return saved;
+    const today = new Date();
+    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const dayName = days[today.getDay()];
+    const dateStr = today.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: '2-digit' });
+    return `${dayName}, ${dateStr}`;
+  });
+
+  const [maintenanceShift, setMaintenanceShift] = useState(() => {
+    return localStorage.getItem('svp_report_maint_shift') || 'Shift 3';
+  });
+
+  const [maintenanceReporter, setMaintenanceReporter] = useState(() => {
+    return localStorage.getItem('svp_report_maint_reporter') || 'Kang Rohmat.';
+  });
+
+  const [maintenanceIssue, setMaintenanceIssue] = useState(() => {
+    return localStorage.getItem('svp_report_maint_issue') || 'Terdapat alarm pada mesin IMA F87 “rack not in supply”.';
+  });
+
+  const [maintenancePhotoBefore, setMaintenancePhotoBefore] = useState(() => {
+    return localStorage.getItem('svp_report_maint_photo_before') || 'Terlampir.';
+  });
+
+  const [maintenanceCause, setMaintenanceCause] = useState(() => {
+    return localStorage.getItem('svp_report_maint_cause') || 'Coupling penggerak as pompa pada mesin IMA F87 stuck menyebabkan alarm tersebut.';
+  });
+
+  const [maintenanceComponent, setMaintenanceComponent] = useState(() => {
+    return localStorage.getItem('svp_report_maint_component') || 'N/A';
+  });
+
+  const [maintenanceAction, setMaintenanceAction] = useState(() => {
+    return localStorage.getItem('svp_report_maint_action') || 'Dilakukan penyemprotan desinfektan pada as pompa mesin IMA F87.';
+  });
+
+  const [maintenancePartReplacement, setMaintenancePartReplacement] = useState(() => {
+    return localStorage.getItem('svp_report_maint_part_replacement') || 'N/A';
+  });
+
+  const [maintenanceTestResult, setMaintenanceTestResult] = useState(() => {
+    return localStorage.getItem('svp_report_maint_test_result') || 'Ok, video terlampir.';
+  });
+
+  const [maintenancePhotoAfter, setMaintenancePhotoAfter] = useState(() => {
+    return localStorage.getItem('svp_report_maint_photo_after') || 'Terlampir.';
+  });
+
+  const [maintenanceCategory, setMaintenanceCategory] = useState<'Mechanical' | 'Electrical' | 'Utility' | 'Maintenance' | 'Instrument'>(() => {
+    return (localStorage.getItem('svp_report_maint_category') as any) || 'Mechanical';
+  });
+
+  const [connectedDowntimeId, setConnectedDowntimeId] = useState(() => {
+    return localStorage.getItem('svp_report_maint_connected_downtime_id') || '';
+  });
+
+  const [showQuickAddDowntime, setShowQuickAddDowntime] = useState(false);
+  const [quickDowntimeMachine, setQuickDowntimeMachine] = useState('IMA F87');
+  const [quickDowntimeDuration, setQuickDowntimeDuration] = useState(15);
+
   // Manual edited direct texts
   const [directTextAseptic, setDirectTextAseptic] = useState('');
   const [directTextVision, setDirectTextVision] = useState('');
+  const [directTextMaintenance, setDirectTextMaintenance] = useState('');
 
   // Persist tanks to local storage
   useEffect(() => {
@@ -568,6 +658,59 @@ export default function ReportManager({
   useEffect(() => {
     localStorage.setItem('svp_report_aseptic_machines', JSON.stringify(asepticMachines));
   }, [asepticMachines]);
+
+  // Persist maintenance form to local storage
+  useEffect(() => {
+    localStorage.setItem('svp_report_maint_date', maintenanceDate);
+  }, [maintenanceDate]);
+
+  useEffect(() => {
+    localStorage.setItem('svp_report_maint_shift', maintenanceShift);
+  }, [maintenanceShift]);
+
+  useEffect(() => {
+    localStorage.setItem('svp_report_maint_reporter', maintenanceReporter);
+  }, [maintenanceReporter]);
+
+  useEffect(() => {
+    localStorage.setItem('svp_report_maint_issue', maintenanceIssue);
+  }, [maintenanceIssue]);
+
+  useEffect(() => {
+    localStorage.setItem('svp_report_maint_photo_before', maintenancePhotoBefore);
+  }, [maintenancePhotoBefore]);
+
+  useEffect(() => {
+    localStorage.setItem('svp_report_maint_cause', maintenanceCause);
+  }, [maintenanceCause]);
+
+  useEffect(() => {
+    localStorage.setItem('svp_report_maint_component', maintenanceComponent);
+  }, [maintenanceComponent]);
+
+  useEffect(() => {
+    localStorage.setItem('svp_report_maint_action', maintenanceAction);
+  }, [maintenanceAction]);
+
+  useEffect(() => {
+    localStorage.setItem('svp_report_maint_part_replacement', maintenancePartReplacement);
+  }, [maintenancePartReplacement]);
+
+  useEffect(() => {
+    localStorage.setItem('svp_report_maint_test_result', maintenanceTestResult);
+  }, [maintenanceTestResult]);
+
+  useEffect(() => {
+    localStorage.setItem('svp_report_maint_photo_after', maintenancePhotoAfter);
+  }, [maintenancePhotoAfter]);
+
+  useEffect(() => {
+    localStorage.setItem('svp_report_maint_category', maintenanceCategory);
+  }, [maintenanceCategory]);
+
+  useEffect(() => {
+    localStorage.setItem('svp_report_maint_connected_downtime_id', connectedDowntimeId);
+  }, [connectedDowntimeId]);
 
   // Persist BS1010 and Plumat to local storage
   useEffect(() => {
@@ -810,16 +953,70 @@ ${shinvaRotary.targetShiftNo}:
 ${formatTargetShift(shinvaRotary.targetShift)}`;
   };
 
+  const compileMaintenanceReport = () => {
+    const processPoints = (text: string) => {
+      if (!text) return '- N/A';
+      return text
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line !== '')
+        .map(line => {
+          if (line.startsWith('-') || line.startsWith('•') || line.startsWith('*')) {
+            return line;
+          }
+          return `- ${line}`;
+        })
+        .join('\n');
+    };
+
+    return `*Report Maintenance SVP*
+${maintenanceDate}
+${maintenanceShift}
+
+*Dilaporkan oleh :*
+${processPoints(maintenanceReporter)}
+
+*Keluhan/Kerusakan :*
+${processPoints(maintenanceIssue)}
+
+*Kategori Kerusakan :*
+- ${maintenanceCategory}
+
+*Foto Kerusakan (Before) :*
+${processPoints(maintenancePhotoBefore)}
+
+*Penyebab Kerusakan :*
+${processPoints(maintenanceCause)}
+
+*Komponen yang Rusak :*
+${processPoints(maintenanceComponent)}
+
+*Tindakan Perbaikan :*
+${processPoints(maintenanceAction)}
+
+*Pergantian Part :*
+${processPoints(maintenancePartReplacement)}
+
+*Hasil Test Running :*
+${processPoints(maintenanceTestResult)}
+
+*Foto Perbaikan (After) :*
+${processPoints(maintenancePhotoAfter)}`;
+  };
+
   // Sync Compiled texts to state for Direct mode or WhatsApp preview
   const currentCompiledText = activeDivision === 'aseptic' 
     ? (editorMode === 'direct' ? directTextAseptic : compileAsepticReport())
-    : (editorMode === 'direct' ? directTextVision : compileVisionReport());
+    : activeDivision === 'vision'
+      ? (editorMode === 'direct' ? directTextVision : compileVisionReport())
+      : (editorMode === 'direct' ? directTextMaintenance : compileMaintenanceReport());
 
   // Handle mode change to initialize direct text
   useEffect(() => {
     if (editorMode === 'direct') {
       setDirectTextAseptic(compileAsepticReport());
       setDirectTextVision(compileVisionReport());
+      setDirectTextMaintenance(compileMaintenanceReport());
     }
   }, [editorMode]);
 
@@ -929,7 +1126,7 @@ ${formatTargetShift(shinvaRotary.targetShift)}`;
       });
       setAsepticTanks(newTanks);
 
-    } else {
+    } else if (activeDivision === 'vision') {
       setVisionShift(computedShift);
       
       // Auto populate current date
@@ -1028,6 +1225,48 @@ ${formatTargetShift(shinvaRotary.targetShift)}`;
         }
       });
       setVisionPreparation(prepUpdates);
+    } else if (activeDivision === 'maintenance') {
+      setMaintenanceShift(computedShift);
+
+      // Auto populate current date with YY format for maintenance report
+      const today = new Date();
+      const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+      const dayName = days[today.getDay()];
+      const dateStr = today.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: '2-digit' });
+      setMaintenanceDate(`${dayName}, ${dateStr}`);
+
+      // Smart "Auto-Populate" based on machines or downtime logs
+      const maintMachines = machines.filter(m => m.status === 'maintenance');
+      const recentMaintLogs = downtimes.filter(d => ['Mechanical', 'Electrical', 'Maintenance'].includes(d.category));
+
+      if (maintMachines.length > 0) {
+        const machName = maintMachines[0].name;
+        setMaintenanceIssue(`Terdapat alarm pada mesin ${machName} “kendala operasional / warning”.`);
+        setMaintenanceCause(`Komponen sensor atau coupling penggerak pada mesin ${machName} stuck.`);
+        setMaintenanceAction(`Dilakukan reset sistem, penyemprotan desinfektan, serta running test.`);
+        setMaintenanceComponent('N/A');
+        setMaintenancePartReplacement('N/A');
+        setMaintenanceTestResult('Ok, running lancar.');
+      } else if (recentMaintLogs.length > 0) {
+        const log = recentMaintLogs[0];
+        setMaintenanceIssue(`Kerusakan pada mesin ${log.machineName}: ${log.notes}`);
+        setMaintenanceCause(`Masalah mekanikal/elektrikal terdeteksi selama masa produksi.`);
+        setMaintenanceAction(`Dilakukan investigasi mendalam, pembersihan komponen, serta perbaikan.`);
+        setMaintenanceComponent('Sensor / Coupling terkait');
+        setMaintenancePartReplacement('N/A');
+        setMaintenanceTestResult('Ok, video terlampir.');
+      } else {
+        // Fallback default sample data
+        setMaintenanceReporter('Kang Rohmat.');
+        setMaintenanceIssue('Terdapat alarm pada mesin IMA F87 “rack not in supply”.');
+        setMaintenancePhotoBefore('Terlampir.');
+        setMaintenanceCause('Coupling penggerak as pompa pada mesin IMA F87 stuck menyebabkan alarm tersebut.');
+        setMaintenanceComponent('N/A');
+        setMaintenanceAction('Dilakukan penyemprotan desinfektan pada as pompa mesin IMA F87.');
+        setMaintenancePartReplacement('N/A');
+        setMaintenanceTestResult('Ok, video terlampir.');
+        setMaintenancePhotoAfter('Terlampir.');
+      }
     }
   };
 
@@ -1152,6 +1391,16 @@ ${formatTargetShift(shinvaRotary.targetShift)}`;
           >
             Vision & Final Steril
           </button>
+          <button
+            onClick={() => setActiveDivision('maintenance')}
+            className={`flex-1 sm:flex-none px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              activeDivision === 'maintenance' 
+                ? 'bg-white text-blue-600 shadow-sm' 
+                : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            Maintenance SVP
+          </button>
         </div>
       </div>
 
@@ -1221,12 +1470,19 @@ ${formatTargetShift(shinvaRotary.targetShift)}`;
                   className="w-full h-[500px] p-4 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs leading-relaxed text-slate-700"
                   placeholder="Ketik laporan aseptic di sini..."
                 />
-              ) : (
+              ) : activeDivision === 'vision' ? (
                 <textarea
                   value={directTextVision}
                   onChange={(e) => setDirectTextVision(e.target.value)}
                   className="w-full h-[500px] p-4 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs leading-relaxed text-slate-700"
                   placeholder="Ketik laporan vision di sini..."
+                />
+              ) : (
+                <textarea
+                  value={directTextMaintenance}
+                  onChange={(e) => setDirectTextMaintenance(e.target.value)}
+                  className="w-full h-[500px] p-4 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs leading-relaxed text-slate-700"
+                  placeholder="Ketik laporan maintenance di sini..."
                 />
               )}
               
@@ -2592,6 +2848,319 @@ ${formatTargetShift(shinvaRotary.targetShift)}`;
                   </div>
                 </div>
               )}
+
+              {/* DIVISION C: MAINTENANCE SVP FORM */}
+              {activeDivision === 'maintenance' && (
+                <div className="space-y-6 animate-fadeIn">
+                  {/* General Header Inputs */}
+                  <div className="bento-card p-6 space-y-4 bg-white border border-slate-200 rounded-xl shadow-sm">
+                    <h3 className="font-extrabold text-slate-800 text-xs uppercase tracking-wider border-b border-slate-100 pb-2">
+                      Informasi Umum (Maintenance)
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Hari & Tanggal Laporan</label>
+                        <input
+                          type="text"
+                          value={maintenanceDate}
+                          onChange={(e) => setMaintenanceDate(e.target.value)}
+                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          placeholder="e.g. Rabu, 09/07/26"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Shift Kerja</label>
+                        <select
+                          value={maintenanceShift}
+                          onChange={(e) => setMaintenanceShift(e.target.value)}
+                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                        >
+                          <option value="Shift 1">Shift 1</option>
+                          <option value="Shift 2">Shift 2</option>
+                          <option value="Shift 3">Shift 3</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Dilaporkan Oleh</label>
+                      <input
+                        type="text"
+                        value={maintenanceReporter}
+                        onChange={(e) => setMaintenanceReporter(e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        placeholder="e.g. Kang Rohmat."
+                      />
+                    </div>
+                  </div>
+
+                  {/* Integrasi Downtime Monitoring */}
+                  <div className="bento-card p-6 space-y-4 bg-gradient-to-br from-blue-50/50 to-indigo-50/50 border border-blue-200 rounded-xl shadow-sm">
+                    <div className="flex items-center justify-between border-b border-blue-100/80 pb-2">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-blue-600" />
+                        <h3 className="font-extrabold text-slate-800 text-xs uppercase tracking-wider">
+                          Integrasi Downtime Monitoring
+                        </h3>
+                      </div>
+                      <span className="bg-blue-100 text-blue-800 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase">
+                        Live Sync
+                      </span>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">
+                          Hubungkan ke Catatan Downtime Aktif
+                        </label>
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <select
+                            value={connectedDowntimeId}
+                            onChange={(e) => {
+                              const id = e.target.value;
+                              setConnectedDowntimeId(id);
+                              if (id) {
+                                const log = downtimes.find(d => d.id === id);
+                                if (log) {
+                                  setMaintenanceIssue(log.notes);
+                                  if (['Mechanical', 'Electrical', 'Utility', 'Maintenance', 'Instrument'].includes(log.category)) {
+                                    setMaintenanceCategory(log.category as any);
+                                  }
+                                }
+                              }
+                            }}
+                            className="flex-grow px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                          >
+                            <option value="">-- Pilih Catatan Kejadian Downtime --</option>
+                            {downtimes
+                              .filter(d => ['Mechanical', 'Electrical', 'Utility', 'Maintenance', 'Instrument'].includes(d.category))
+                              .map(d => (
+                                <option key={d.id} value={d.id}>
+                                  [{d.category}] {d.machineName} - {d.notes.slice(0, 45)}{d.notes.length > 45 ? '...' : ''} ({d.durationMinutes}m)
+                                </option>
+                              ))}
+                          </select>
+                          {connectedDowntimeId && (
+                            <button
+                              type="button"
+                              onClick={() => setConnectedDowntimeId('')}
+                              className="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                            >
+                              Batal Hubung
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {(() => {
+                        const connectedLog = downtimes.find(d => d.id === connectedDowntimeId);
+                        if (connectedLog) {
+                          return (
+                            <div className="bg-white border border-blue-100 p-3.5 rounded-lg space-y-2.5 shadow-sm text-xs text-slate-600">
+                              <div className="flex items-center justify-between text-[10px] font-bold text-blue-700 uppercase">
+                                <span>Terhubung dengan ID: {connectedLog.id}</span>
+                                <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-md border border-emerald-100 flex items-center gap-1">
+                                  <Check className="w-3 h-3 text-emerald-600" /> Terbaca & Tersinkronisasi
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 text-[11px] font-semibold text-slate-700">
+                                <div>Mesin: <span className="text-slate-900 font-extrabold">{connectedLog.machineName}</span></div>
+                                <div>Kategori: <span className="text-slate-900 font-extrabold">{connectedLog.category}</span></div>
+                                <div>Durasi: <span className="text-slate-900 font-extrabold">{connectedLog.durationMinutes} menit</span></div>
+                                <div>Waktu: <span className="text-slate-500 font-normal">{new Date(connectedLog.timestamp).toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'})}</span></div>
+                              </div>
+                              <div className="border-t border-slate-100 pt-2 space-y-2">
+                                <p className="text-[10px] font-extrabold uppercase text-slate-400">Pembaruan Sinkronisasi:</p>
+                                <div className="flex flex-wrap gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (setDowntimes) {
+                                        setDowntimes(prev => prev.map(d => {
+                                          if (d.id === connectedDowntimeId) {
+                                            return {
+                                              ...d,
+                                              notes: maintenanceIssue,
+                                              category: maintenanceCategory as any
+                                            };
+                                          }
+                                          return d;
+                                        }));
+                                        alert('Selesai! Catatan Kejadian Downtime berhasil disinkronkan dengan data laporan ini.');
+                                      }
+                                    }}
+                                    className="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[10px] font-black shadow-sm transition-colors cursor-pointer flex items-center gap-1"
+                                  >
+                                    <Save className="w-3.5 h-3.5" /> Sinkronkan & Perbarui Downtime
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setMaintenanceIssue(connectedLog.notes);
+                                      if (['Mechanical', 'Electrical', 'Utility', 'Maintenance', 'Instrument'].includes(connectedLog.category)) {
+                                        setMaintenanceCategory(connectedLog.category as any);
+                                      }
+                                    }}
+                                    className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[10px] font-bold border border-slate-200 transition-colors cursor-pointer flex items-center gap-1"
+                                  >
+                                    <RotateCcw className="w-3.5 h-3.5" /> Ambil Data dari Downtime
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        } else {
+                          return (
+                            <div className="bg-white/50 border border-dashed border-slate-200 p-4 rounded-lg text-center space-y-3">
+                              <p className="text-xs text-slate-500 font-medium">
+                                Belum terhubung ke catatan kejadian downtime yang aktif.
+                              </p>
+                              <div className="flex justify-center">
+                                <button
+                                  type="button"
+                                  onClick={() => setShowQuickAddDowntime(true)}
+                                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black rounded-lg shadow-sm hover:shadow transition-all flex items-center gap-1.5 cursor-pointer"
+                                >
+                                  <Plus className="w-3.5 h-3.5" /> Buat Catatan Downtime Baru
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        }
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* Keluhan & Penyebab */}
+                  <div className="bento-card p-6 space-y-4 bg-white border border-slate-200 rounded-xl shadow-sm">
+                    <h3 className="font-extrabold text-slate-800 text-xs uppercase tracking-wider border-b border-slate-100 pb-2">
+                      Keluhan & Analisa Kerusakan
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">Kategori Kerusakan</label>
+                          <select
+                            value={maintenanceCategory}
+                            onChange={(e) => setMaintenanceCategory(e.target.value as any)}
+                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                          >
+                            <option value="Mechanical">Mechanical</option>
+                            <option value="Electrical">Electrical</option>
+                            <option value="Utility">Utility</option>
+                            <option value="Maintenance">Maintenance</option>
+                            <option value="Instrument">Instrument</option>
+                          </select>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">Foto Kerusakan (Before)</label>
+                          <input
+                            type="text"
+                            value={maintenancePhotoBefore}
+                            onChange={(e) => setMaintenancePhotoBefore(e.target.value)}
+                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            placeholder="e.g. Terlampir."
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">Keluhan / Kerusakan</label>
+                        <textarea
+                          rows={2}
+                          value={maintenanceIssue}
+                          onChange={(e) => setMaintenanceIssue(e.target.value)}
+                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          placeholder="e.g. Terdapat alarm pada mesin IMA F87 “rack not in supply”."
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">Penyebab Kerusakan</label>
+                        <textarea
+                          rows={2}
+                          value={maintenanceCause}
+                          onChange={(e) => setMaintenanceCause(e.target.value)}
+                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          placeholder="e.g. Coupling penggerak as pompa pada mesin IMA F87 stuck menyebabkan alarm tersebut."
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Tindakan & Komponen */}
+                  <div className="bento-card p-6 space-y-4 bg-white border border-slate-200 rounded-xl shadow-sm">
+                    <h3 className="font-extrabold text-slate-800 text-xs uppercase tracking-wider border-b border-slate-100 pb-2">
+                      Tindakan Perbaikan & Suku Cadang
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">Komponen yang Rusak</label>
+                        <input
+                          type="text"
+                          value={maintenanceComponent}
+                          onChange={(e) => setMaintenanceComponent(e.target.value)}
+                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          placeholder="e.g. N/A"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">Tindakan Perbaikan</label>
+                        <textarea
+                          rows={2}
+                          value={maintenanceAction}
+                          onChange={(e) => setMaintenanceAction(e.target.value)}
+                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          placeholder="e.g. Dilakukan penyemprotan desinfektan pada as pompa mesin IMA F87."
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">Pergantian Part</label>
+                        <input
+                          type="text"
+                          value={maintenancePartReplacement}
+                          onChange={(e) => setMaintenancePartReplacement(e.target.value)}
+                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          placeholder="e.g. N/A"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Hasil Akhir */}
+                  <div className="bento-card p-6 space-y-4 bg-white border border-slate-200 rounded-xl shadow-sm">
+                    <h3 className="font-extrabold text-slate-800 text-xs uppercase tracking-wider border-b border-slate-100 pb-2">
+                      Hasil Akhir & Dokumentasi After
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">Hasil Test Running</label>
+                        <input
+                          type="text"
+                          value={maintenanceTestResult}
+                          onChange={(e) => setMaintenanceTestResult(e.target.value)}
+                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          placeholder="e.g. Ok, video terlampir."
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">Foto Perbaikan (After)</label>
+                        <input
+                          type="text"
+                          value={maintenancePhotoAfter}
+                          onChange={(e) => setMaintenancePhotoAfter(e.target.value)}
+                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          placeholder="e.g. Terlampir."
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -2716,6 +3285,98 @@ ${formatTargetShift(shinvaRotary.targetShift)}`;
 
         </div>
       </div>
+
+      {showQuickAddDowntime && (
+        <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full shadow-2xl overflow-hidden animate-scaleIn">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-4 flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5" />
+                <h3 className="font-extrabold text-sm uppercase tracking-wider">
+                  Downtime Baru
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowQuickAddDowntime(false)}
+                className="text-white hover:text-slate-200 text-lg font-black bg-white/10 hover:bg-white/20 w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer"
+              >
+                &times;
+              </button>
+            </div>
+
+            <form onSubmit={handleQuickAddDowntimeSubmit} className="p-6 space-y-4 animate-fadeIn">
+              <p className="text-xs text-slate-500 font-medium">
+                Sistem akan membuat Catatan Kejadian Downtime baru dengan kategori <strong className="text-blue-600">{maintenanceCategory}</strong> dan menghubungkannya langsung ke laporan maintenance ini.
+              </p>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">Pilih Mesin</label>
+                <select
+                  value={quickDowntimeMachine}
+                  onChange={(e) => setQuickDowntimeMachine(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                >
+                  {machines.map(m => (
+                    <option key={m.id} value={m.name}>
+                      {m.name}
+                    </option>
+                  ))}
+                  {/* Fallback standard machines if list is empty */}
+                  {machines.length === 0 && [
+                    'IMA F87', 'Corima', 'BS8010', 'BS1010', 'IMA MD150', 'Plumat', 'Axomatic', 'Comas', 'Truking'
+                  ].map(m => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">Durasi Downtime (Menit)</label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="1"
+                    value={quickDowntimeDuration}
+                    onChange={(e) => setQuickDowntimeDuration(parseInt(e.target.value) || 0)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                  <span className="absolute right-3 top-2 font-mono text-[10px] text-slate-400 font-bold select-none">MENIT</span>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">Catatan / Kejadian</label>
+                <textarea
+                  rows={3}
+                  value={maintenanceIssue}
+                  onChange={(e) => setMaintenanceIssue(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  placeholder="e.g. Deskripsi kerusakan..."
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowQuickAddDowntime(false)}
+                  className="flex-1 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl shadow-sm border border-slate-200 transition-colors cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer"
+                >
+                  Simpan & Hubungkan
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

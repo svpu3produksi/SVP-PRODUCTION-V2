@@ -7,8 +7,9 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 
 const provider = new GoogleAuthProvider();
-// Request Google Sheets scope to read/write spreadsheets
+// Request Google Sheets & Drive scopes to read/write spreadsheets and files
 provider.addScope('https://www.googleapis.com/auth/spreadsheets');
+provider.addScope('https://www.googleapis.com/auth/drive.file');
 
 // Keep track of the login state and cache the access token in memory
 let isSigningIn = false;

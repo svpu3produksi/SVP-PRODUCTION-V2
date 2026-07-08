@@ -115,6 +115,12 @@ export default function SheetsSync({ onSyncAll, currentUser, onLogin, onLogout }
                   </svg>
                   Hubungkan dengan Google Account
                 </button>
+                <div className="bg-blue-50/50 border border-blue-100 p-3 rounded-lg space-y-1 mt-2">
+                  <p className="text-[10px] font-extrabold text-blue-800 uppercase tracking-wide">💡 Tips Koneksi IFrame</p>
+                  <p className="text-[10px] text-blue-700 leading-normal font-medium">
+                    Jika login gagal atau jendela pop-up tertutup otomatis karena kendala iFrame (Preview), silakan klik tombol <strong>"Open in a new tab"</strong> di pojok kanan atas layar Anda untuk membuka aplikasi secara penuh, lalu hubungkan kembali akun Google Anda di tab tersebut.
+                  </p>
+                </div>
               </div>
             )}
           </div>

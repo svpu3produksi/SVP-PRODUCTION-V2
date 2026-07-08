@@ -602,6 +602,7 @@ export default function App() {
             setBatches={setBatches}
             setMachines={setMachines}
             setTankUsageHistory={setTankUsageHistory}
+            setDowntimes={setDowntimes}
           />
         )}
 

@@ -53,6 +53,7 @@ export type DowntimeCategory =
   | 'CIP SIP'
   | 'Changeover'
   | 'Maintenance'
+  | 'Instrument'
   | 'Waiting';
 
 export interface DowntimeLog {
@@ -139,5 +140,6 @@ export const DOWNTIME_CATEGORIES: DowntimeCategory[] = [
   'CIP SIP',
   'Changeover',
   'Maintenance',
+  'Instrument',
   'Waiting'
 ];
